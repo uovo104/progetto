@@ -33,62 +33,72 @@ export default function Page() {
   const [issues, setIssues] = useState<IssueSummary[]>(initialIssues)
   const [emailSent, setEmailSent] = useState(false)
   const [summaryCreated, setSummaryCreated] = useState(false)
+  const [webhookStatus, setWebhookStatus] = useState("idle")
+  const [webhookMessage, setWebhookMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const handleCreateWorkflow = (event: FormEvent<HTMLFormElement>) => {
+  const handleCreateWorkflow = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!transcription.trim()) return
 
     setIsSubmitting(true)
     setEmailSent(false)
     setSummaryCreated(false)
+    setWebhookStatus("sending")
+    setWebhookMessage("")
 
-    window.setTimeout(() => {
-      const newIssue: IssueSummary = {
-        id: Date.now(),
-        title: "Issue generata dalla trascrizione",
-        summary: transcription.slice(0, 120) + "...",
-        repo: "workspace/operations",
-        status: "Creato",
+    const newIssue: IssueSummary = {
+      id: Date.now(),
+      title: "Issue generata dalla trascrizione",
+      summary: transcription.slice(0, 120) + "...",
+      repo: "workspace/operations",
+      status: "Creato",
+    }
+
+    setIssues((current) => [newIssue, ...current])
+
+    try {
+      const query = new URLSearchParams({ transcription })
+      const response = await fetch(
+        `http://localhost:5678/webhook-test/fcbd4300-3132-44b0-916e-b9bab27f2fde?${query.toString()}`,
+        {
+          method: "GET",
+        }
+      )
+
+      if (!response.ok) {
+        const errorData = await response.text()
+        throw new Error(`Webhook error: ${response.status} ${errorData}`)
       }
 
-      setIssues((current) => [newIssue, ...current])
+      setWebhookStatus("sent")
+      setWebhookMessage("Webhook inviato correttamente.")
+    } catch (error) {
+      setWebhookStatus("failed")
+      setWebhookMessage(
+        error instanceof Error ? error.message : "Errore invio webhook"
+      )
+    } finally {
       setEmailSent(true)
       setSummaryCreated(true)
       setIsSubmitting(false)
       setTranscription("")
-    }, 800)
+    }
   }
 
   return (
-    <main className="dark min-h-screen bg-background text-foreground px-6 py-10">
-      <div className="relative">
-        <div className="pointer-events-none hidden xl:flex absolute inset-y-0 left-0 w-32 flex-col items-center justify-center gap-6 bg-gradient-to-b from-[#1e293b] via-[#0f172a] to-[#020617] text-center text-sm text-white/80 shadow-[inset_6px_0_24px_rgba(0,0,0,0.35)]">
-          <span className="rotate-[-90deg] tracking-[0.35em] text-xs uppercase">Subway Surfers</span>
-          <div className="h-24 w-24 rounded-full bg-white/10 p-4 text-[10px] leading-snug">
-            Keep the attention
-            <br /> high
-          </div>
-        </div>
-
-        <div className="pointer-events-none hidden xl:flex absolute inset-y-0 right-0 w-32 flex-col items-center justify-center gap-6 bg-gradient-to-b from-[#1e293b] via-[#0f172a] to-[#020617] text-center text-sm text-white/80 shadow-[inset_-6px_0_24px_rgba(0,0,0,0.35)]">
-          <span className="rotate-[90deg] tracking-[0.35em] text-xs uppercase">Subway Surfers</span>
-          <div className="h-24 w-24 rounded-full bg-white/10 p-4 text-[10px] leading-snug">
-            Full speed
-            <br /> ahead
-          </div>
-        </div>
-
-        <div className="mx-auto flex w-full max-w-5xl flex-col gap-8">
-          <header className="rounded-3xl border border-border bg-card/90 p-10 text-center shadow-xl shadow-black/20 backdrop-blur-xl">
+    <main className="dark min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.12),_transparent_30%),#010409] text-foreground px-4 py-8 md:px-6">
+      <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 md:px-0">
+        <header className="mx-auto w-full max-w-5xl rounded-3xl border border-border bg-card/95 p-10 text-center shadow-xl shadow-black/20 backdrop-blur-xl">
           <h1 className="text-5xl font-semibold tracking-tight">Hello World 🚀</h1>
-          <p className="mt-4 text-base text-muted-foreground">
-            Esempio frontend: prendi una trascrizione, genera un issue GitHub, invia un'email di conferma e aggiunge un riassunto su Google Sheets.
+          <p className="mt-4 text-base leading-7 text-muted-foreground">
+            Inserisci una trascrizione, invia il payload al webhook e osserva le azioni simulate
+            di issue GitHub, email di conferma e aggiunta a Google Sheets.
           </p>
         </header>
 
-        <section className="grid gap-8 lg:grid-cols-[1.4fr_1fr]">
-          <article className="rounded-3xl border border-border bg-card/80 p-8 shadow-xl shadow-black/10 backdrop-blur-xl">
+        <section className="grid gap-8 lg:grid-cols-[2fr_1fr]">
+          <article className="rounded-3xl border border-border bg-card/80 p-10 shadow-xl shadow-black/10 backdrop-blur-xl">
             <div className="mb-6 flex items-center justify-between gap-4">
               <div>
                 <h2 className="text-2xl font-semibold">Workflow simulato</h2>
@@ -116,7 +126,7 @@ export default function Page() {
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
+              <div className="grid gap-4 sm:grid-cols-3">
                 <div className="rounded-3xl border border-border bg-background/80 p-4">
                   <p className="text-sm text-muted-foreground">Email di conferma</p>
                   <p className="mt-2 text-lg font-semibold">{emailSent ? "Invio simulato" : "In attesa"}</p>
@@ -124,6 +134,21 @@ export default function Page() {
                 <div className="rounded-3xl border border-border bg-background/80 p-4">
                   <p className="text-sm text-muted-foreground">Riassunto Sheets</p>
                   <p className="mt-2 text-lg font-semibold">{summaryCreated ? "Aggiunto" : "In attesa"}</p>
+                </div>
+                <div className="rounded-3xl border border-border bg-background/80 p-4">
+                  <p className="text-sm text-muted-foreground">Webhook</p>
+                  <p className="mt-2 text-lg font-semibold">
+                    {webhookStatus === "sending"
+                      ? "Invio..."
+                      : webhookStatus === "sent"
+                      ? "Attaccata"
+                      : webhookStatus === "failed"
+                      ? "Errore"
+                      : "In attesa"}
+                  </p>
+                  {webhookMessage ? (
+                    <p className="mt-2 text-xs text-muted-foreground">{webhookMessage}</p>
+                  ) : null}
                 </div>
               </div>
 
@@ -136,8 +161,8 @@ export default function Page() {
                     <li>Aggiunta riassunto a Google Sheets</li>
                   </ul>
                 </div>
-                <Button type="submit" size="lg" disabled={isSubmitting}>
-                  {isSubmitting ? "Elaborazione..." : "Avvia workflow"}
+                <Button type="submit" size="lg" className="w-full sm:w-auto" disabled={isSubmitting}>
+                  {isSubmitting ? "Elaborazione..." : "Invia"}
                 </Button>
               </div>
             </form>
@@ -168,7 +193,6 @@ export default function Page() {
           </aside>
         </section>
       </div>
-    </div>
     </main>
   )
 }
