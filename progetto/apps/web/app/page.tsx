@@ -31,6 +31,7 @@ const initialIssues: IssueSummary[] = [
 export default function Page() {
   const [transcription, setTranscription] = useState("")
   const [issues, setIssues] = useState<IssueSummary[]>(initialIssues)
+  const [selectedIssueIds, setSelectedIssueIds] = useState<number[]>([])
   const [emailSent, setEmailSent] = useState(false)
   const [summaryCreated, setSummaryCreated] = useState(false)
   const [webhookStatus, setWebhookStatus] = useState("idle")
@@ -84,6 +85,28 @@ export default function Page() {
       setIsSubmitting(false)
       setTranscription("")
     }
+  }
+
+  const allSelected = issues.length > 0 && selectedIssueIds.length === issues.length
+  const hasSelection = selectedIssueIds.length > 0
+
+  const toggleSelectIssue = (issueId: number) => {
+    setSelectedIssueIds((current) =>
+      current.includes(issueId)
+        ? current.filter((id) => id !== issueId)
+        : [...current, issueId]
+    )
+  }
+
+  const toggleSelectAll = () => {
+    setSelectedIssueIds(allSelected ? [] : issues.map((issue) => issue.id))
+  }
+
+  const deleteSelectedIssues = () => {
+    if (!hasSelection) return
+
+    setIssues((current) => current.filter((issue) => !selectedIssueIds.includes(issue.id)))
+    setSelectedIssueIds([])
   }
 
   return (
@@ -169,26 +192,64 @@ export default function Page() {
           </article>
 
           <aside className="rounded-3xl border border-border bg-card/80 p-8 shadow-xl shadow-black/10 backdrop-blur-xl">
-            <h2 className="text-2xl font-semibold">Issue create</h2>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Esempio di issue generate a partire da trascrizioni precedenti.
-            </p>
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h2 className="text-2xl font-semibold">Issue create</h2>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Esempio di issue generate a partire da trascrizioni precedenti.
+                </p>
+              </div>
+              <div className="flex flex-wrap items-center gap-3">
+                <Button variant="outline" size="sm" type="button" onClick={toggleSelectAll}>
+                  {allSelected ? "Deseleziona tutte" : "Seleziona tutte"}
+                </Button>
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  type="button"
+                  onClick={deleteSelectedIssues}
+                  disabled={!hasSelection}
+                >
+                  Elimina selezionate
+                </Button>
+              </div>
+            </div>
 
             <div className="mt-6 space-y-4">
-              {issues.map((issue) => (
-                <div key={issue.id} className="rounded-3xl border border-border bg-background/90 p-5">
-                  <div className="flex items-center justify-between gap-3">
-                    <div>
-                      <h3 className="text-lg font-semibold">{issue.title}</h3>
-                      <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">{issue.repo}</p>
-                    </div>
-                    <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
-                      {issue.status}
-                    </span>
-                  </div>
-                  <p className="mt-4 text-sm leading-6 text-muted-foreground">{issue.summary}</p>
+              {issues.length === 0 ? (
+                <div className="rounded-3xl border border-border bg-background/90 p-5 text-sm text-muted-foreground">
+                  Nessuna issue presente.
                 </div>
-              ))}
+              ) : (
+                issues.map((issue) => (
+                  <div
+                    key={issue.id}
+                    className="rounded-3xl border border-border bg-background/90 p-5"
+                  >
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <input
+                          id={`select-${issue.id}`}
+                          type="checkbox"
+                          checked={selectedIssueIds.includes(issue.id)}
+                          onChange={() => toggleSelectIssue(issue.id)}
+                          className="h-5 w-5 rounded border-border bg-background text-primary focus:ring-primary"
+                        />
+                        <div>
+                          <h3 className="text-lg font-semibold">{issue.title}</h3>
+                          <p className="text-xs uppercase tracking-[0.24em] text-muted-foreground">
+                            {issue.repo}
+                          </p>
+                        </div>
+                      </div>
+                      <span className="rounded-full bg-secondary px-3 py-1 text-xs font-semibold text-secondary-foreground">
+                        {issue.status}
+                      </span>
+                    </div>
+                    <p className="mt-4 text-sm leading-6 text-muted-foreground">{issue.summary}</p>
+                  </div>
+                ))
+              )}
             </div>
           </aside>
         </section>
