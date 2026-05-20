@@ -113,7 +113,7 @@ export default function Page() {
     <main className="dark min-h-screen bg-[radial-gradient(circle_at_top,_rgba(56,189,248,0.12),_transparent_28%),radial-gradient(circle_at_bottom_right,_rgba(168,85,247,0.12),_transparent_30%),#010409] text-foreground px-4 py-8 md:px-6">
       <div className="relative mx-auto flex w-full max-w-6xl flex-col gap-10 md:px-0">
         <header className="mx-auto w-full max-w-5xl rounded-3xl border border-border bg-card/95 p-10 text-center shadow-xl shadow-black/20 backdrop-blur-xl">
-          <h1 className="text-5xl font-semibold tracking-tight">Hello World 🚀</h1>
+          <h1 className="text-5xl font-semibold tracking-tight">Gestione issue in dark mode</h1>
           <p className="mt-4 text-base leading-7 text-muted-foreground">
             Inserisci una trascrizione, invia il payload al webhook e osserva le azioni simulate
             di issue GitHub, email di conferma e aggiunta a Google Sheets.
