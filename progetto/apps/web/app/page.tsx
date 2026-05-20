@@ -38,6 +38,23 @@ export default function Page() {
   const [webhookMessage, setWebhookMessage] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
 
+  const getWebhookUrl = () => {
+    const path = "/webhook/fcbd4300-3132-44b0-916e-b9bab27f2fde"
+    const envUrl = process.env.NEXT_PUBLIC_WEBHOOK_URL
+
+    if (envUrl) {
+      return envUrl.endsWith(path) ? envUrl : `${envUrl.replace(/\/$/, "")}${path}`
+    }
+
+    if (typeof window === "undefined") {
+      return `http://localhost:5678${path}`
+    }
+
+    const hostname = window.location.hostname
+    const isLocalhost = hostname === "localhost" || hostname === "127.0.0.1"
+    return isLocalhost ? `http://localhost:5678${path}` : `${window.location.origin}${path}`
+  }
+
   const handleCreateWorkflow = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault()
     if (!transcription.trim()) return
@@ -60,12 +77,9 @@ export default function Page() {
 
     try {
       const query = new URLSearchParams({ transcription })
-      const response = await fetch(
-        `http://localhost:5678/webhook-test/fcbd4300-3132-44b0-916e-b9bab27f2fde?${query.toString()}`,
-        {
-          method: "GET",
-        }
-      )
+      const response = await fetch(`${getWebhookUrl()}?${query.toString()}`, {
+        method: "GET",
+      })
 
       if (!response.ok) {
         const errorData = await response.text()
